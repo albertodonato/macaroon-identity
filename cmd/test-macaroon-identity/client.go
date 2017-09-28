@@ -1,37 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
-
-	"gopkg.in/errgo.v1"
 
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
 )
 
-// client represents a client of the target service.
-// In this simple example, it just tries a GET
-// request, which will fail unless the client
-// has the required authorization.
-func clientRequest(client *httpbakery.Client, serverEndpoint string) (string, error) {
-	// The Do function implements the mechanics
-	// of actually gathering discharge macaroons
-	// when required, and retrying the request
-	// when necessary.
-	req, err := http.NewRequest("GET", serverEndpoint, nil)
+func clientRequest(method string, endpoint string, logger *log.Logger) (string, error) {
+	client := newClient()
+	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
-		return "", errgo.Notef(err, "cannot make new HTTP request")
+		return "", err
 	}
+
+	logger.Printf("client requesting %s %s", method, endpoint)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", errgo.NoteMask(err, "GET failed", errgo.Any)
+		return "", err
 	}
 	defer resp.Body.Close()
-	// TODO(rog) unmarshal error
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("cannot read response: %v", err)
+		return "", err
 	}
 	return string(data), nil
+}
+
+func newClient() *httpbakery.Client {
+	c := httpbakery.NewClient()
+	c.AddInteractor(httpbakery.WebBrowserInteractor{})
+	return c
 }

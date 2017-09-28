@@ -33,7 +33,7 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 	discharger.AddMuxHandlers(mux, "/")
 	return &AuthService{
 		HTTPService: HTTPService{
-			Name:       "Authentication service",
+			Name:       "authentication service",
 			ListenAddr: listenAddr,
 			Logger:     logger,
 			Mux:        mux,
