@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -44,4 +45,9 @@ func (s *HTTPService) Start(background bool) error {
 		}
 	}()
 	return nil
+}
+
+// Fail returns an HTTP error with the specified message
+func (s *HTTPService) Fail(w http.ResponseWriter, code int, msg string, args ...interface{}) {
+	http.Error(w, fmt.Sprintf(msg, args...), code)
 }

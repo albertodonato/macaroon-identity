@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	"gopkg.in/errgo.v1"
 
+	"gopkg.in/errgo.v1"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
@@ -69,7 +69,7 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 		ctx := httpbakery.ContextWithRequest(context.TODO(), req)
 		ops, err := opsForRequest(req)
 		if err != nil {
-			fail(w, http.StatusInternalServerError, "%v", err)
+			t.Fail(w, http.StatusInternalServerError, "%v", err)
 			return
 		}
 		authChecker := t.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
@@ -104,23 +104,19 @@ func opsForRequest(req *http.Request) ([]bakery.Op, error) {
 func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, req *http.Request, verr error) {
 	derr, ok := errgo.Cause(verr).(*bakery.DischargeRequiredError)
 	if !ok {
-		fail(w, http.StatusForbidden, "%v", verr)
+		t.Fail(w, http.StatusForbidden, "%v", verr)
 		return
 	}
 	// Mint an appropriate macaroon and send it back to the client.
 	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), time.Now().Add(5*time.Minute), derr.Caveats, derr.Ops...)
 	if err != nil {
-		fail(w, http.StatusInternalServerError, "cannot mint macaroon: %v", err)
+		t.Fail(w, http.StatusInternalServerError, "cannot mint macaroon: %v", err)
 		return
 	}
 
 	herr := httpbakery.NewDischargeRequiredError(m, "/", derr, req)
 	herr.(*httpbakery.Error).Info.CookieNameSuffix = "auth"
 	httpbakery.WriteError(ctx, w, herr)
-}
-
-func fail(w http.ResponseWriter, code int, msg string, args ...interface{}) {
-	http.Error(w, fmt.Sprintf(msg, args...), code)
 }
 
 type authorizer struct {
