@@ -14,6 +14,7 @@ import (
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
 )
 
+
 type targetServiceHandler struct {
 	bakery       *bakery.Bakery
 	authEndpoint string

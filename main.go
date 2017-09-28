@@ -1,20 +1,3 @@
-// This example demonstrates three components:
-//
-// - A target service, representing a web server that
-// wishes to use macaroons for authorization.
-// It delegates authorization to a third-party
-// authorization server by adding third-party
-// caveats to macaroons that it sends to the user.
-//
-// - A client, representing a client wanting to make
-// requests to the server.
-//
-// - An authorization server.
-//
-// In a real system, these three components would
-// live on different machines; the client component
-// could also be a web browser.
-// (TODO: write javascript discharge gatherer)
 package main
 
 import (
@@ -22,24 +5,18 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 
-	"gopkg.in/macaroon-bakery.v2-unstable/bakery"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
 )
 
-var defaultHTTPClient = httpbakery.NewHTTPClient()
-
 func main() {
-	key, err := bakery.GenerateKey()
-	if err != nil {
-		log.Fatalf("cannot generate auth service key pair: %v", err)
-	}
-	authPublicKey := &key.Public
-	authEndpoint := mustServe(func(endpoint string) (http.Handler, error) {
-		return authService(endpoint, key)
-	})
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	s := NewService("localhost:8080", logger)
+	goPanicOnError(s.Start)
+
 	serverEndpoint := mustServe(func(endpoint string) (http.Handler, error) {
-		return targetService(endpoint, authEndpoint, authPublicKey)
+		return targetService(endpoint, s.Endpoint(), &s.KeyPair.Public)
 	})
 	resp, err := clientRequest(newClient(), serverEndpoint)
 	if err != nil {
@@ -61,7 +38,7 @@ func serve(newHandler func(string) (http.Handler, error)) (endpointURL string, e
 	if err != nil {
 		return "", fmt.Errorf("cannot listen: %v", err)
 	}
-	endpointURL = "http://" + listener.Addr().String()
+	endpointURL = "http://" + listener.Addr().String() + "/gold"
 	handler, err := newHandler(endpointURL)
 	if err != nil {
 		return "", fmt.Errorf("cannot start handler: %v", err)
@@ -74,4 +51,12 @@ func newClient() *httpbakery.Client {
 	c := httpbakery.NewClient()
 	c.AddInteractor(httpbakery.WebBrowserInteractor{})
 	return c
+}
+
+func goPanicOnError(f func() error) {
+	go func() {
+		if err := f(); err != nil {
+			panic(err)
+		}
+	}()
 }
