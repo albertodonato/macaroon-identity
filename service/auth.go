@@ -24,10 +24,34 @@ type loginResponse struct {
 	Token *httpbakery.DischargeToken `json:"token"`
 }
 
+type CredentialsChecker struct {
+	creds map[string]string
+}
+
+func NewCredentialsChecker() CredentialsChecker {
+	return CredentialsChecker{creds: map[string]string{}}
+}
+
+func (c *CredentialsChecker) Check(form interface{}) bool {
+	m := form.(map[string]interface{})
+	username := m["username"].(string)
+	password := m["password"].(string)
+	pass, ok := c.creds[username]
+	return ok && pass == password
+}
+
+func (c *CredentialsChecker) AddCreds(creds map[string]string) {
+	for user, pass := range creds {
+		c.creds[user] = pass
+	}
+}
+
 type AuthService struct {
 	HTTPService
 
 	KeyPair *bakery.KeyPair
+
+	Checker CredentialsChecker
 }
 
 func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
@@ -48,6 +72,7 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 			Mux:        mux,
 		},
 		KeyPair: key,
+		Checker: NewCredentialsChecker(),
 	}
 
 	mux.Handle(formURL, http.HandlerFunc(s.formHandler))
@@ -95,11 +120,7 @@ func (s *AuthService) formHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		m := form.(map[string]interface{})
-		username := m["username"].(string)
-		password := m["password"].(string)
-		// XXX handle authentication
-		if username != "foo" && password != "bar" {
+		if !s.Checker.Check(form) {
 			s.bakeryFail(w, "invalid credentials")
 			return
 		}

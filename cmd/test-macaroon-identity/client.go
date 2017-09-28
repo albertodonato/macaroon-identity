@@ -10,28 +10,47 @@ import (
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery/form"
 )
 
-func clientRequest(method string, endpoint string, logger *log.Logger) (string, error) {
-	client := newClient()
+type Credentials struct {
+	Username string
+	Password string
+}
+
+type BatchFiller struct {
+	Credentials Credentials
+}
+
+func (f *BatchFiller) Fill(form schemaform.Form) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"username": f.Credentials.Username,
+		"password": f.Credentials.Password,
+	}, nil
+}
+
+func clientRequest(method string, endpoint string, creds Credentials, logger *log.Logger) error {
+	client := newClient(creds)
 	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	logger.Printf("client requesting %s %s", method, endpoint)
+	logger.Printf("client requesting %s %s with creds %q", method, endpoint, creds)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		logger.Printf("client error: %v", err)
+		return err
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+	if err == nil {
+		logger.Printf("client response: %s", string(data))
+	} else {
+		logger.Printf("client error: %v", err)
 	}
-	return string(data), nil
+	return err
 }
 
-func newClient() *httpbakery.Client {
+func newClient(creds Credentials) *httpbakery.Client {
 	c := httpbakery.NewClient()
-	c.AddInteractor(form.Interactor{Filler: schemaform.IOFiller{}})
+	c.AddInteractor(form.Interactor{Filler: &BatchFiller{Credentials: creds}})
 	return c
 }

@@ -10,6 +10,7 @@ import (
 func main() {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	s := service.NewAuthService("localhost:0", logger)
+	s.Checker.AddCreds(map[string]string{"foo": "bar", "baz": "bza"})
 	if err := s.Start(true); err != nil {
 		panic(err)
 	}
@@ -19,10 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	resp, err := clientRequest("GET", t.Endpoint(), logger)
-	if err == nil {
-		logger.Printf("client response: %s", resp)
-	} else {
-		logger.Fatalf("client error: %v", err)
-	}
+	clientRequest("GET", t.Endpoint(), Credentials{Username: "foo", Password: "bar"}, logger)
+	clientRequest("GET", t.Endpoint(), Credentials{Username: "foo", Password: "invalid"}, logger)
+	clientRequest("GET", t.Endpoint(), Credentials{Username: "baz", Password: "bza"}, logger)
 }
