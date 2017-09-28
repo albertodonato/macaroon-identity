@@ -59,6 +59,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 }
 
 func (t *TargetService) serveURL(w http.ResponseWriter, req *http.Request) {
+	t.LogRequest(req)
 	fmt.Fprintf(w, `you requested URL "%s"`, req.URL.Path)
 }
 

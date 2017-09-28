@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	schemaform "gopkg.in/juju/environschema.v1/form"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
+	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery/form"
 )
 
 func clientRequest(method string, endpoint string, logger *log.Logger) (string, error) {
@@ -30,6 +32,6 @@ func clientRequest(method string, endpoint string, logger *log.Logger) (string, 
 
 func newClient() *httpbakery.Client {
 	c := httpbakery.NewClient()
-	c.AddInteractor(httpbakery.WebBrowserInteractor{})
+	c.AddInteractor(form.Interactor{Filler: schemaform.IOFiller{}})
 	return c
 }

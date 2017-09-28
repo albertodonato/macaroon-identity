@@ -47,6 +47,10 @@ func (s *HTTPService) Start(background bool) error {
 	return nil
 }
 
+func (s *HTTPService) LogRequest(req *http.Request) {
+	s.Logger.Printf("%s - %s %s", s.Name, req.Method, req.URL.Path)
+}
+
 // Fail returns an HTTP error with the specified message
 func (s *HTTPService) Fail(w http.ResponseWriter, code int, msg string, args ...interface{}) {
 	http.Error(w, fmt.Sprintf(msg, args...), code)
