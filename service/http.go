@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"log"
@@ -9,9 +9,9 @@ import (
 type HTTPService struct {
 	Name       string
 	ListenAddr string
+	Logger     *log.Logger
+	Mux        http.Handler
 
-	logger   *log.Logger
-	mux      http.Handler
 	listener net.Listener
 }
 
@@ -30,14 +30,14 @@ func (s *HTTPService) Start() error {
 	}
 	s.listener = listener
 	if s.Name != "" {
-		s.logger.Printf("%s running at %s", s.Name, s.Endpoint())
+		s.Logger.Printf("%s running at %s", s.Name, s.Endpoint())
 	}
 	go func() {
-		err := http.Serve(s.listener, s.mux)
+		err := http.Serve(s.listener, s.Mux)
 		if err != nil {
 			panic(err)
 		}
 	}()
-	
+
 	return nil
 }

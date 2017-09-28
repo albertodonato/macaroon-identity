@@ -13,10 +13,12 @@ import (
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
+
+	"github.com/albertodonato/macaroon-identity/service"
 )
 
 type TargetService struct {
-	HTTPService
+	service.HTTPService
 
 	authEndpoint string
 	authKey      *bakery.PublicKey
@@ -40,11 +42,11 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 	})
 	mux := http.NewServeMux()
 	t := TargetService{
-		HTTPService: HTTPService{
+		HTTPService: service.HTTPService{
 			Name:       "Target service",
 			ListenAddr: endpoint,
-			logger:     logger,
-			mux:        mux,
+			Logger:     logger,
+			Mux:        mux,
 		},
 		authEndpoint: authEndpoint,
 		authKey:      authKey,

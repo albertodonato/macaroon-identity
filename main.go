@@ -8,11 +8,13 @@ import (
 	"os"
 
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
+
+	"github.com/albertodonato/macaroon-identity/service"
 )
 
 func main() {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	s := NewAuthService("localhost:8080", logger)
+	s := service.NewAuthService("localhost:8080", logger)
 	if err := s.Start(); err != nil {
 		panic(err)
 	}

@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"fmt"
@@ -35,8 +35,8 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 		HTTPService: HTTPService{
 			Name:       "Authentication service",
 			ListenAddr: listenAddr,
-			logger:     logger,
-			mux:        mux,
+			Logger:     logger,
+			Mux:        mux,
 		},
 		KeyPair: key,
 	}
