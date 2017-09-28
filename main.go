@@ -12,13 +12,17 @@ import (
 
 func main() {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	s := NewService("localhost:8080", logger)
-	goPanicOnError(s.Start)
+	s := NewAuthService("localhost:8080", logger)
+	if err := s.Start(); err != nil {
+		panic(err)
+	}
 
-	serverEndpoint := mustServe(func(endpoint string) (http.Handler, error) {
-		return targetService(endpoint, s.Endpoint(), &s.KeyPair.Public)
-	})
-	resp, err := clientRequest(newClient(), serverEndpoint)
+	t := NewTargetService("localhost:0", s.Endpoint(), &s.KeyPair.Public, logger)
+	if err := t.Start(); err != nil {
+		panic(err)
+	}
+
+	resp, err := clientRequest(newClient(), t.Endpoint())
 	if err != nil {
 		log.Fatalf("client failed: %v", err)
 	}
@@ -51,12 +55,4 @@ func newClient() *httpbakery.Client {
 	c := httpbakery.NewClient()
 	c.AddInteractor(httpbakery.WebBrowserInteractor{})
 	return c
-}
-
-func goPanicOnError(f func() error) {
-	go func() {
-		if err := f(); err != nil {
-			panic(err)
-		}
-	}()
 }

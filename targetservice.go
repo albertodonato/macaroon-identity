@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -14,56 +15,54 @@ import (
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
 )
 
+type TargetService struct {
+	HTTPService
 
-type targetServiceHandler struct {
-	bakery       *bakery.Bakery
 	authEndpoint string
-	endpoint     string
-	mux          *http.ServeMux
+	authKey      *bakery.PublicKey
+	keyPair      *bakery.KeyPair
+	bakery       *bakery.Bakery
 }
 
-// targetService implements a "target service", representing
-// an arbitrary web service that wants to delegate authorization
-// to third parties.
-//
-func targetService(endpoint, authEndpoint string, authPK *bakery.PublicKey) (http.Handler, error) {
-	key, err := bakery.GenerateKey()
-	if err != nil {
-		return nil, err
-	}
-	pkLocator := httpbakery.NewThirdPartyLocator(nil, nil)
-	pkLocator.AllowInsecure()
+func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.PublicKey, logger *log.Logger) *TargetService {
+	key := bakery.MustGenerateKey()
+
+	locator := httpbakery.NewThirdPartyLocator(nil, nil)
+	locator.AllowInsecure()
 	b := bakery.New(bakery.BakeryParams{
 		Key:      key,
 		Location: endpoint,
-		Locator:  pkLocator,
+		Locator:  locator,
 		Checker:  httpbakery.NewChecker(),
 		Authorizer: authorizer{
 			thirdPartyLocation: authEndpoint,
 		},
 	})
 	mux := http.NewServeMux()
-	srv := &targetServiceHandler{
-		bakery:       b,
+	t := TargetService{
+		HTTPService: HTTPService{
+			Name:       "Target service",
+			ListenAddr: endpoint,
+			logger:     logger,
+			mux:        mux,
+		},
 		authEndpoint: authEndpoint,
+		authKey:      authKey,
+		keyPair:      key,
+		bakery:       b,
 	}
-	mux.Handle("/gold/", srv.auth(http.HandlerFunc(srv.serveGold)))
-	mux.Handle("/silver/", srv.auth(http.HandlerFunc(srv.serveSilver)))
-	return mux, nil
+	mux.Handle("/", t.auth(http.HandlerFunc(t.serveURL)))
+	return &t
+
 }
 
-func (srv *targetServiceHandler) serveGold(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "all is golden")
+func (t *TargetService) serveURL(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, `you requested URL "%s"`, req.URL.Path)
 }
 
-func (srv *targetServiceHandler) serveSilver(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "every cloud has a silver lining")
-}
-
-// auth wraps the given handler with a handler that provides
-// authorization by inspecting the HTTP request
-// to decide what authorization is required.
-func (srv *targetServiceHandler) auth(h http.Handler) http.Handler {
+// auth wraps the given handler with a handler that provides authorization by
+// inspecting the HTTP request to decide what authorization is required.
+func (t *TargetService) auth(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := httpbakery.ContextWithRequest(context.TODO(), req)
 		ops, err := opsForRequest(req)
@@ -71,9 +70,9 @@ func (srv *targetServiceHandler) auth(h http.Handler) http.Handler {
 			fail(w, http.StatusInternalServerError, "%v", err)
 			return
 		}
-		authChecker := srv.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
+		authChecker := t.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
 		if _, err = authChecker.Allow(ctx, ops...); err != nil {
-			srv.writeError(ctx, w, req, err)
+			t.writeError(ctx, w, req, err)
 			return
 		}
 		h.ServeHTTP(w, req)
@@ -97,17 +96,17 @@ func opsForRequest(req *http.Request) ([]bakery.Op, error) {
 }
 
 // writeError writes an error to w in response to req. If the error was
-// generated because of a required macaroon that the client does not
-// have, we mint a macaroon that, when discharged, will grant the client
-// the right to execute the given operation.
-func (srv *targetServiceHandler) writeError(ctx context.Context, w http.ResponseWriter, req *http.Request, verr error) {
+// generated because of a required macaroon that the client does not have, we
+// mint a macaroon that, when discharged, will grant the client the right to
+// execute the given operation.
+func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, req *http.Request, verr error) {
 	derr, ok := errgo.Cause(verr).(*bakery.DischargeRequiredError)
 	if !ok {
 		fail(w, http.StatusForbidden, "%v", verr)
 		return
 	}
 	// Mint an appropriate macaroon and send it back to the client.
-	m, err := srv.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), time.Now().Add(5*time.Minute), derr.Caveats, derr.Ops...)
+	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), time.Now().Add(5*time.Minute), derr.Caveats, derr.Ops...)
 	if err != nil {
 		fail(w, http.StatusInternalServerError, "cannot mint macaroon: %v", err)
 		return
