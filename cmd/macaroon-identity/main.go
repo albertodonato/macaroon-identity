@@ -14,7 +14,7 @@ func main() {
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	s := service.NewAuthService(*endpoint, logger)
-	if err := s.Start(); err != nil {
+	if err := s.Start(false); err != nil {
 		panic(err)
 	}
 }

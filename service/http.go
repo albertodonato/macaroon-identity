@@ -23,7 +23,7 @@ func (s *HTTPService) Endpoint() string {
 	return "http://" + s.listener.Addr().String()
 }
 
-func (s *HTTPService) Start() error {
+func (s *HTTPService) Start(background bool) error {
 	listener, err := net.Listen("tcp", s.ListenAddr)
 	if err != nil {
 		return err
@@ -32,12 +32,16 @@ func (s *HTTPService) Start() error {
 	if s.Name != "" {
 		s.Logger.Printf("%s running at %s", s.Name, s.Endpoint())
 	}
+
+	if !background {
+		return http.Serve(s.listener, s.Mux)
+	}
+
 	go func() {
 		err := http.Serve(s.listener, s.Mux)
 		if err != nil {
 			panic(err)
 		}
 	}()
-
 	return nil
 }

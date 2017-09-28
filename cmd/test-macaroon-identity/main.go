@@ -15,12 +15,12 @@ import (
 func main() {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	s := service.NewAuthService("localhost:8080", logger)
-	if err := s.Start(); err != nil {
+	if err := s.Start(true); err != nil {
 		panic(err)
 	}
 
 	t := NewTargetService("localhost:0", s.Endpoint(), &s.KeyPair.Public, logger)
-	if err := t.Start(); err != nil {
+	if err := t.Start(true); err != nil {
 		panic(err)
 	}
 
