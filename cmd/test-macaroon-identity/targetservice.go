@@ -81,8 +81,8 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 	})
 }
 
-// opsForRequest returns the required operations
-// implied by the given HTTP request.
+// opsForRequest returns the required operations implied by the given HTTP
+// request.
 func opsForRequest(req *http.Request) ([]bakery.Op, error) {
 	if !strings.HasPrefix(req.URL.Path, "/") {
 		return nil, errgo.Newf("bad path")

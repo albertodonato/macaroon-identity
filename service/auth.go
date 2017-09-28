@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -43,10 +42,9 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 }
 
 func thirdPartyChecker(ctx context.Context, req *http.Request, info *bakery.ThirdPartyCaveatInfo, token *httpbakery.DischargeToken) ([]checkers.Caveat, error) {
-	cond, args, err := checkers.ParseCaveat(string(info.Condition))
+	_, _, err := checkers.ParseCaveat(string(info.Condition))
 	if err != nil {
 		return nil, errgo.WithCausef(err, params.ErrBadRequest, "cannot parse caveat %q", info.Condition)
 	}
-	fmt.Println(">>>", cond, args)
 	return []checkers.Caveat{httpbakery.SameClientIPAddrCaveat(req)}, nil
 }
