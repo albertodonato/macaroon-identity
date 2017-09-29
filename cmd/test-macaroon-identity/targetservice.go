@@ -73,7 +73,7 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 			return
 		}
 		authChecker := t.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
-		if _, err = authChecker.Allow(ctx, ops...); err != nil {
+		if _, err := authChecker.Allow(ctx, ops...); err != nil {
 			t.writeError(ctx, w, req, err)
 			return
 		}
