@@ -24,28 +24,6 @@ type loginResponse struct {
 	Token *httpbakery.DischargeToken `json:"token"`
 }
 
-type CredentialsChecker struct {
-	creds map[string]string
-}
-
-func NewCredentialsChecker() CredentialsChecker {
-	return CredentialsChecker{creds: map[string]string{}}
-}
-
-func (c *CredentialsChecker) Check(form interface{}) bool {
-	m := form.(map[string]interface{})
-	username := m["username"].(string)
-	password := m["password"].(string)
-	pass, ok := c.creds[username]
-	return ok && pass == password
-}
-
-func (c *CredentialsChecker) AddCreds(creds map[string]string) {
-	for user, pass := range creds {
-		c.creds[user] = pass
-	}
-}
-
 type AuthService struct {
 	HTTPService
 
