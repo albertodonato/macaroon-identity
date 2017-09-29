@@ -7,14 +7,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"gopkg.in/errgo.v1"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery/form"
 
 	"github.com/juju/httprequest"
-	"github.com/juju/idmclient/params"
 )
 
 const formURL string = "/form"
@@ -64,12 +62,12 @@ func thirdPartyChecker(ctx context.Context, req *http.Request, info *bakery.Thir
 	}
 
 	if token.Kind != "form" || string(token.Value) != formTokenContent {
-		return nil, errgo.Newf("invalid token %#v", token)
+		return nil, fmt.Errorf("invalid token %#v", token)
 	}
 
 	_, _, err := checkers.ParseCaveat(string(info.Condition))
 	if err != nil {
-		return nil, errgo.WithCausef(err, params.ErrBadRequest, "cannot parse caveat %q", info.Condition)
+		return nil, fmt.Errorf("cannot parse caveat %q: %s", info.Condition, err)
 	}
 	return []checkers.Caveat{httpbakery.SameClientIPAddrCaveat(req)}, nil
 }

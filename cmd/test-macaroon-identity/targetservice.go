@@ -9,7 +9,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"gopkg.in/errgo.v1"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery"
 	"gopkg.in/macaroon-bakery.v2-unstable/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
@@ -86,11 +85,11 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 // request.
 func opsForRequest(req *http.Request) ([]bakery.Op, error) {
 	if !strings.HasPrefix(req.URL.Path, "/") {
-		return nil, errgo.Newf("bad path")
+		return nil, fmt.Errorf("bad path")
 	}
 	elems := strings.Split(req.URL.Path, "/")
 	if len(elems) < 2 {
-		return nil, errgo.Newf("bad path")
+		return nil, fmt.Errorf("bad path")
 	}
 	return []bakery.Op{{
 		Entity: elems[1],
@@ -103,7 +102,7 @@ func opsForRequest(req *http.Request) ([]bakery.Op, error) {
 // mint a macaroon that, when discharged, will grant the client the right to
 // execute the given operation.
 func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, req *http.Request, verr error) {
-	derr, ok := errgo.Cause(verr).(*bakery.DischargeRequiredError)
+	derr, ok := verr.(*bakery.DischargeRequiredError)
 	if !ok {
 		t.Fail(w, http.StatusForbidden, "%v", verr)
 		return
