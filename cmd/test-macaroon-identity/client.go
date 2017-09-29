@@ -33,18 +33,18 @@ func clientRequest(method string, endpoint string, creds Credentials, logger *lo
 		return err
 	}
 
-	logger.Printf("client requesting %s %s with creds %q", method, endpoint, creds)
+	logger.Printf("cli  - %s %s with creds %q", method, endpoint, creds)
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Printf("client error: %v", err)
+		logger.Printf("cli  - got error: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err == nil {
-		logger.Printf("client response: %s", string(data))
+		logger.Printf("cli  - got response: %s", string(data))
 	} else {
-		logger.Printf("client error: %v", err)
+		logger.Printf("cli  - got error: %v", err)
 	}
 	return err
 }

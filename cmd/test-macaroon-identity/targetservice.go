@@ -43,7 +43,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 	mux := http.NewServeMux()
 	t := TargetService{
 		HTTPService: service.HTTPService{
-			Name:       "target service",
+			Name:       "serv",
 			ListenAddr: endpoint,
 			Logger:     logger,
 			Mux:        mux,

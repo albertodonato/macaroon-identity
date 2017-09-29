@@ -31,7 +31,7 @@ func (s *HTTPService) Start(background bool) error {
 	}
 	s.listener = listener
 	if s.Name != "" {
-		s.Logger.Printf("%s running at %s", s.Name, s.Endpoint())
+		s.Logger.Printf("%s - running at %s", s.Name, s.Endpoint())
 	}
 
 	if !background {
