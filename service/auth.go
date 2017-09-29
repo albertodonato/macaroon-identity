@@ -28,7 +28,6 @@ type AuthService struct {
 	HTTPService
 
 	KeyPair *bakery.KeyPair
-
 	Checker CredentialsChecker
 }
 
