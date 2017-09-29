@@ -27,7 +27,7 @@ func main() {
 
 func parseFlags() flags {
 	f := flags{
-		Endpoint: *flag.String("endpoint", "localhost:8080", "service endpoint"),
+		Endpoint: *flag.String("endpoint", "localhost:8081", "service endpoint"),
 		CredsFile: *flag.String("creds", "credentials.csv", "CSV file with credentials (username and password)"),
 	}
 	flag.Parse()
