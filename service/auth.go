@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,10 +14,10 @@ import (
 	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery/form"
 
 	"github.com/juju/httprequest"
+	"github.com/rogpeppe/fastuuid"
 )
 
 const formURL string = "/form"
-const formTokenContent string = "ok"
 
 type loginResponse struct {
 	Token *httpbakery.DischargeToken `json:"token"`
@@ -28,19 +29,15 @@ type AuthService struct {
 
 	KeyPair *bakery.KeyPair
 	Checker CredentialsChecker
+
+	userTokens    map[string]string // map user token to username
+	uuidGenerator *fastuuid.Generator
 }
 
 // NewAuthService returns an AuthService
 func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 	key := bakery.MustGenerateKey()
-	discharger := httpbakery.NewDischarger(
-		httpbakery.DischargerParams{
-			Key:     key,
-			Checker: httpbakery.ThirdPartyCaveatCheckerFunc(thirdPartyChecker),
-		})
-
 	mux := http.NewServeMux()
-	discharger.AddMuxHandlers(mux, "/")
 	s := AuthService{
 		HTTPService: HTTPService{
 			Name:       "auth",
@@ -48,22 +45,32 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 			Logger:     logger,
 			Mux:        mux,
 		},
-		KeyPair: key,
-		Checker: NewCredentialsChecker(),
+		KeyPair:       key,
+		Checker:       NewCredentialsChecker(),
+		uuidGenerator: fastuuid.MustNewGenerator(),
+		userTokens:    map[string]string{},
 	}
-
 	mux.Handle(formURL, http.HandlerFunc(s.formHandler))
+
+	discharger := httpbakery.NewDischarger(
+		httpbakery.DischargerParams{
+			Key:     key,
+			Checker: httpbakery.ThirdPartyCaveatCheckerFunc(s.thirdPartyChecker),
+		})
+	discharger.AddMuxHandlers(mux, "/")
 	return &s
 }
 
-func thirdPartyChecker(ctx context.Context, req *http.Request, info *bakery.ThirdPartyCaveatInfo, token *httpbakery.DischargeToken) ([]checkers.Caveat, error) {
+func (s *AuthService) thirdPartyChecker(ctx context.Context, req *http.Request, info *bakery.ThirdPartyCaveatInfo, token *httpbakery.DischargeToken) ([]checkers.Caveat, error) {
 	if token == nil {
 		err := httpbakery.NewInteractionRequiredError(nil, req)
 		err.SetInteraction("form", form.InteractionInfo{URL: formURL})
 		return nil, err
 	}
 
-	if token.Kind != "form" || string(token.Value) != formTokenContent {
+	tokenString := string(token.Value)
+	username, ok := s.userTokens[tokenString]
+	if token.Kind != "form" || !ok {
 		return nil, fmt.Errorf("invalid token %#v", token)
 	}
 
@@ -71,7 +78,11 @@ func thirdPartyChecker(ctx context.Context, req *http.Request, info *bakery.Thir
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse caveat %q: %s", info.Condition, err)
 	}
-	return []checkers.Caveat{httpbakery.SameClientIPAddrCaveat(req)}, nil
+
+	return []checkers.Caveat{
+		httpbakery.SameClientIPAddrCaveat(req),
+		checkers.DeclaredCaveat("username", username),
+	}, nil
 }
 
 func (s *AuthService) formHandler(w http.ResponseWriter, req *http.Request) {
@@ -102,10 +113,14 @@ func (s *AuthService) formHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		username := form.(map[string]interface{})["username"].(string)
+		token := s.getRandomToken()
+		s.userTokens[token] = username
+
 		loginResponse := loginResponse{
 			Token: &httpbakery.DischargeToken{
 				Kind:  "form",
-				Value: []byte(formTokenContent),
+				Value: []byte(token),
 			},
 		}
 		httprequest.WriteJSON(w, http.StatusOK, loginResponse)
@@ -114,6 +129,14 @@ func (s *AuthService) formHandler(w http.ResponseWriter, req *http.Request) {
 		s.Fail(w, http.StatusMethodNotAllowed, "%s method not allowed", req.Method)
 		return
 	}
+}
+
+func (s *AuthService) getRandomToken() string {
+	uuid := make([]byte, 24)
+	for i, b := range s.uuidGenerator.Next() {
+		uuid[i] = b
+	}
+	return base64.StdEncoding.EncodeToString(uuid)
 }
 
 func (s *AuthService) bakeryFail(w http.ResponseWriter, msg string, args ...interface{}) {
