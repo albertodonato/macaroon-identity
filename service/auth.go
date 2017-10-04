@@ -22,6 +22,7 @@ type loginResponse struct {
 	Token *httpbakery.DischargeToken `json:"token"`
 }
 
+// AuthService is an HTTP service for authentication using macaroons.
 type AuthService struct {
 	HTTPService
 
@@ -29,6 +30,7 @@ type AuthService struct {
 	Checker CredentialsChecker
 }
 
+// NewAuthService returns an AuthService
 func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 	key := bakery.MustGenerateKey()
 	discharger := httpbakery.NewDischarger(
