@@ -9,7 +9,7 @@ import (
 )
 
 type flags struct {
-	Endpoint string
+	Endpoint  string
 	CredsFile string
 }
 
@@ -25,11 +25,14 @@ func main() {
 	}
 }
 
-func parseFlags() flags {
-	f := flags{
-		Endpoint: *flag.String("endpoint", "localhost:8081", "service endpoint"),
-		CredsFile: *flag.String("creds", "credentials.csv", "CSV file with credentials (username and password)"),
-	}
+func parseFlags() *flags {
+	endpoint := flag.String("endpoint", "localhost:8081", "service endpoint")
+	credsFile := flag.String("creds", "credentials.csv", "CSV file with credentials (username and password)")
 	flag.Parse()
+	f := &flags{
+		Endpoint:  *endpoint,
+		CredsFile: *credsFile,
+	}
+
 	return f
 }
