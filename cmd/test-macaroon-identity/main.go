@@ -5,9 +5,15 @@ import (
 	"os"
 
 	"github.com/albertodonato/macaroon-identity/service"
+
+	"github.com/juju/loggo"
 )
 
 func main() {
+	if loggoLevel := os.Getenv("LOGGO"); loggoLevel != "" {
+		loggo.ConfigureLoggers("<root>=" + loggoLevel)
+	}
+
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	s := service.NewAuthService("localhost:0", logger)
 	s.Checker.AddCreds(map[string]string{"foo": "bar", "baz": "bza"})
