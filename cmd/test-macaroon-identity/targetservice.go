@@ -5,13 +5,13 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"golang.org/x/net/context"
 
-	"gopkg.in/macaroon-bakery.v2-unstable/bakery"
-	"gopkg.in/macaroon-bakery.v2-unstable/bakery/checkers"
-	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
+	"gopkg.in/macaroon-bakery.v2/bakery"
+	"gopkg.in/macaroon-bakery.v2/bakery/checkers"
+	"gopkg.in/macaroon-bakery.v2/bakery/identchecker"
+	"gopkg.in/macaroon-bakery.v2/httpbakery"
 
 	"github.com/albertodonato/macaroon-identity/service"
 )
@@ -22,7 +22,7 @@ type TargetService struct {
 	authEndpoint string
 	authKey      *bakery.PublicKey
 	keyPair      *bakery.KeyPair
-	bakery       *bakery.Bakery
+	bakery       *identchecker.Bakery
 }
 
 func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.PublicKey, logger *log.Logger) *TargetService {
@@ -30,7 +30,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 
 	locator := httpbakery.NewThirdPartyLocator(nil, nil)
 	locator.AllowInsecure()
-	b := bakery.New(bakery.BakeryParams{
+	b := identchecker.NewBakery(identchecker.BakeryParams{
 		Key:      key,
 		Location: endpoint,
 		Locator:  locator,
@@ -108,13 +108,18 @@ func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 	// Mint an appropriate macaroon and send it back to the client.
-	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), time.Now().Add(5*time.Minute), derr.Caveats, derr.Ops...)
+	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), derr.Caveats, derr.Ops...)
 	if err != nil {
 		t.Fail(w, http.StatusInternalServerError, "cannot mint macaroon: %v", err)
 		return
 	}
 
-	herr := httpbakery.NewDischargeRequiredError(m, "/", derr, req)
+	herr := httpbakery.NewDischargeRequiredError(
+		httpbakery.DischargeRequiredErrorParams{
+			Macaroon:      m,
+			OriginalError: derr,
+			Request:       req,
+		})
 	herr.(*httpbakery.Error).Info.CookieNameSuffix = "auth"
 	httpbakery.WriteError(ctx, w, herr)
 }
@@ -123,10 +128,9 @@ type authorizer struct {
 	thirdPartyLocation string
 }
 
-// Authorize implements bakery.Authorizer.Authorize by
-// allowing anyone to do anything if a third party
-// approves it.
-func (a authorizer) Authorize(ctx context.Context, id bakery.Identity, ops []bakery.Op) (allowed []bool, caveats []checkers.Caveat, err error) {
+// Authorize implements identchecker.Authorizer.Authorize by allowing anyone to
+// do anything if a third party approves it.
+func (a authorizer) Authorize(ctx context.Context, id identchecker.Identity, ops []bakery.Op) (allowed []bool, caveats []checkers.Caveat, err error) {
 	allowed = make([]bool, len(ops))
 	for i := range allowed {
 		allowed[i] = true

@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	schemaform "gopkg.in/juju/environschema.v1/form"
-	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery"
-	"gopkg.in/macaroon-bakery.v2-unstable/httpbakery/form"
+	"gopkg.in/macaroon-bakery.v2/httpbakery"
+	"gopkg.in/macaroon-bakery.v2/httpbakery/form"
 )
 
 type Credentials struct {
