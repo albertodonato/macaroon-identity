@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -16,6 +16,9 @@ import (
 	"github.com/albertodonato/macaroon-identity/service"
 )
 
+const authLifeSpan time.Duration = 5 * time.Minute
+
+// TargetService is an HTTP service which requires macaroon-based authentication.
 type TargetService struct {
 	service.HTTPService
 
@@ -25,6 +28,8 @@ type TargetService struct {
 	bakery       *identchecker.Bakery
 }
 
+
+// NewTargetService returns a TargetService instance.
 func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.PublicKey, logger *log.Logger) *TargetService {
 	key := bakery.MustGenerateKey()
 
@@ -67,11 +72,7 @@ func (t *TargetService) serveURL(w http.ResponseWriter, req *http.Request) {
 func (t *TargetService) auth(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := httpbakery.ContextWithRequest(context.TODO(), req)
-		ops, err := opsForRequest(req)
-		if err != nil {
-			t.Fail(w, http.StatusInternalServerError, "%v", err)
-			return
-		}
+		ops := opsForRequest(req)
 		authChecker := t.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
 		if _, err := authChecker.Allow(ctx, ops...); err != nil {
 			t.writeError(ctx, w, req, err)
@@ -83,18 +84,11 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 
 // opsForRequest returns the required operations implied by the given HTTP
 // request.
-func opsForRequest(req *http.Request) ([]bakery.Op, error) {
-	if !strings.HasPrefix(req.URL.Path, "/") {
-		return nil, fmt.Errorf("bad path")
-	}
-	elems := strings.Split(req.URL.Path, "/")
-	if len(elems) < 2 {
-		return nil, fmt.Errorf("bad path")
-	}
+func opsForRequest(r *http.Request) []bakery.Op {
 	return []bakery.Op{{
-		Entity: elems[1],
-		Action: req.Method,
-	}}, nil
+		Entity: r.URL.Path,
+		Action: r.Method,
+	}}
 }
 
 // writeError writes an error to w in response to req. If the error was
@@ -107,8 +101,10 @@ func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, r
 		t.Fail(w, http.StatusForbidden, "%v", verr)
 		return
 	}
+
 	// Mint an appropriate macaroon and send it back to the client.
-	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), derr.Caveats, derr.Ops...)
+	caveats := append(derr.Caveats, checkers.TimeBeforeCaveat(time.Now().Add(authLifeSpan)))
+	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), caveats, derr.Ops...)
 	if err != nil {
 		t.Fail(w, http.StatusInternalServerError, "cannot mint macaroon: %v", err)
 		return

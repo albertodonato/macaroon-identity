@@ -123,7 +123,6 @@ func (s *AuthService) formHandler(w http.ResponseWriter, req *http.Request) {
 			},
 		}
 		httprequest.WriteJSON(w, http.StatusOK, loginResponse)
-
 	default:
 		s.Fail(w, http.StatusMethodNotAllowed, "%s method not allowed", req.Method)
 		return
