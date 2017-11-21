@@ -10,15 +10,18 @@ import (
 	"gopkg.in/macaroon-bakery.v2/httpbakery/form"
 )
 
+// Credentials for a user
 type Credentials struct {
 	Username string
 	Password string
 }
 
+// BatchFiller is a form.Filler which uses the provided Credentials.
 type BatchFiller struct {
 	Credentials Credentials
 }
 
+// Fill fills the Form with the filler credentials
 func (f *BatchFiller) Fill(form schemaform.Form) (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"username": f.Credentials.Username,
