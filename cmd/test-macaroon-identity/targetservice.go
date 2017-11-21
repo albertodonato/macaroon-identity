@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"gopkg.in/juju/idmclient.v1"
 	"gopkg.in/macaroon-bakery.v2/bakery"
 	"gopkg.in/macaroon-bakery.v2/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2/bakery/identchecker"
@@ -28,20 +29,26 @@ type TargetService struct {
 	bakery       *identchecker.Bakery
 }
 
-
 // NewTargetService returns a TargetService instance.
 func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.PublicKey, logger *log.Logger) *TargetService {
 	key := bakery.MustGenerateKey()
 
 	locator := httpbakery.NewThirdPartyLocator(nil, nil)
 	locator.AllowInsecure()
+
+	idmClient, _ := idmclient.New(idmclient.NewParams{
+		BaseURL: authEndpoint,
+	})
 	b := identchecker.NewBakery(identchecker.BakeryParams{
-		Key:      key,
-		Location: endpoint,
-		Locator:  locator,
-		Checker:  httpbakery.NewChecker(),
-		Authorizer: authorizer{
-			thirdPartyLocation: authEndpoint,
+		Key:            key,
+		Location:       endpoint,
+		Locator:        locator,
+		Checker:        httpbakery.NewChecker(),
+		IdentityClient: idmClient,
+		Authorizer: identchecker.ACLAuthorizer{
+			GetACL: func(ctx context.Context, op bakery.Op) ([]string, bool, error) {
+				return []string{identchecker.Everyone}, false, nil
+			},
 		},
 	})
 	mux := http.NewServeMux()
@@ -118,22 +125,4 @@ func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, r
 		})
 	herr.(*httpbakery.Error).Info.CookieNameSuffix = "auth"
 	httpbakery.WriteError(ctx, w, herr)
-}
-
-type authorizer struct {
-	thirdPartyLocation string
-}
-
-// Authorize implements identchecker.Authorizer.Authorize by allowing anyone to
-// do anything if a third party approves it.
-func (a authorizer) Authorize(ctx context.Context, id identchecker.Identity, ops []bakery.Op) (allowed []bool, caveats []checkers.Caveat, err error) {
-	allowed = make([]bool, len(ops))
-	for i := range allowed {
-		allowed[i] = true
-	}
-	caveats = []checkers.Caveat{{
-		Location:  a.thirdPartyLocation,
-		Condition: "access-allowed",
-	}}
-	return
 }
