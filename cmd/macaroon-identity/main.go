@@ -29,10 +29,8 @@ func parseFlags() *flags {
 	endpoint := flag.String("endpoint", "localhost:8081", "service endpoint")
 	credsFile := flag.String("creds", "credentials.csv", "CSV file with credentials (username and password)")
 	flag.Parse()
-	f := &flags{
+	return &flags{
 		Endpoint:  *endpoint,
 		CredsFile: *credsFile,
 	}
-
-	return f
 }

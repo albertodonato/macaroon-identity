@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -9,7 +11,14 @@ import (
 	"github.com/juju/loggo"
 )
 
+type flags struct {
+	NoRequests bool
+}
+
 func main() {
+	flags := parseFlags()
+	fmt.Println(flags)
+
 	if loggoLevel := os.Getenv("LOGGO"); loggoLevel != "" {
 		loggo.ConfigureLoggers("<root>=" + loggoLevel)
 	}
@@ -22,11 +31,30 @@ func main() {
 	}
 
 	t := NewTargetService("localhost:0", s.Endpoint(), &s.KeyPair.Public, logger)
-	if err := t.Start(true); err != nil {
+	if err := t.Start(!flags.NoRequests); err != nil {
 		panic(err)
 	}
 
-	clientRequest("GET", t.Endpoint(), Credentials{Username: "foo", Password: "bar"}, logger)
-	clientRequest("GET", t.Endpoint(), Credentials{Username: "foo", Password: "invalid"}, logger)
-	clientRequest("GET", t.Endpoint(), Credentials{Username: "baz", Password: "bza"}, logger)
+	if !flags.NoRequests {
+		makeTestRequests(t.Endpoint(), logger)
+	}
+}
+
+func makeTestRequests(endpoint string, logger *log.Logger) {
+	testCredentials := []Credentials{
+		{Username: "foo", Password: "bar"},
+		{Username: "foo", Password: "invalid"},
+		{Username: "baz", Password: "bza"},
+	}
+	for _, credentials := range testCredentials {
+		clientRequest("GET", endpoint, credentials, logger)
+	}
+}
+
+func parseFlags() *flags {
+	noRequests := flag.Bool("noreq", false, "don't perform test requests")
+	flag.Parse()
+	return &flags{
+		NoRequests: *noRequests,
+	}
 }
