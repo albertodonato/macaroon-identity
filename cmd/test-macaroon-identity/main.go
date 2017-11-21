@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -17,7 +16,6 @@ type flags struct {
 
 func main() {
 	flags := parseFlags()
-	fmt.Println(flags)
 
 	if loggoLevel := os.Getenv("LOGGO"); loggoLevel != "" {
 		loggo.ConfigureLoggers("<root>=" + loggoLevel)
