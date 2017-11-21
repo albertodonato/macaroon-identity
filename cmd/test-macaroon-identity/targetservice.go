@@ -10,7 +10,6 @@ import (
 
 	"gopkg.in/juju/idmclient.v1"
 	"gopkg.in/macaroon-bakery.v2/bakery"
-	"gopkg.in/macaroon-bakery.v2/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2/bakery/identchecker"
 	"gopkg.in/macaroon-bakery.v2/httpbakery"
 
@@ -82,7 +81,10 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 		ops := opsForRequest(req)
 		authChecker := t.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
 		if _, err := authChecker.Allow(ctx, ops...); err != nil {
-			t.writeError(ctx, w, req, err)
+			oven := httpbakery.Oven{
+				Oven: t.bakery.Oven,
+			}
+			httpbakery.WriteError(ctx, w, oven.Error(ctx, req, err))
 			return
 		}
 		h.ServeHTTP(w, req)
@@ -96,33 +98,4 @@ func opsForRequest(r *http.Request) []bakery.Op {
 		Entity: r.URL.Path,
 		Action: r.Method,
 	}}
-}
-
-// writeError writes an error to w in response to req. If the error was
-// generated because of a required macaroon that the client does not have, we
-// mint a macaroon that, when discharged, will grant the client the right to
-// execute the given operation.
-func (t *TargetService) writeError(ctx context.Context, w http.ResponseWriter, req *http.Request, verr error) {
-	derr, ok := verr.(*bakery.DischargeRequiredError)
-	if !ok {
-		t.Fail(w, http.StatusForbidden, "%v", verr)
-		return
-	}
-
-	// Mint an appropriate macaroon and send it back to the client.
-	caveats := append(derr.Caveats, checkers.TimeBeforeCaveat(time.Now().Add(authLifeSpan)))
-	m, err := t.bakery.Oven.NewMacaroon(ctx, httpbakery.RequestVersion(req), caveats, derr.Ops...)
-	if err != nil {
-		t.Fail(w, http.StatusInternalServerError, "cannot mint macaroon: %v", err)
-		return
-	}
-
-	herr := httpbakery.NewDischargeRequiredError(
-		httpbakery.DischargeRequiredErrorParams{
-			Macaroon:      m,
-			OriginalError: derr,
-			Request:       req,
-		})
-	herr.(*httpbakery.Error).Info.CookieNameSuffix = "auth"
-	httpbakery.WriteError(ctx, w, herr)
 }
