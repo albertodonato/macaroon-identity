@@ -74,9 +74,12 @@ func (s *AuthService) thirdPartyChecker(ctx context.Context, req *http.Request, 
 		return nil, fmt.Errorf("invalid token %#v", token)
 	}
 
-	_, _, err := checkers.ParseCaveat(string(info.Condition))
+	cond, _, err := checkers.ParseCaveat(string(info.Condition))
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse caveat %q: %s", info.Condition, err)
+	}
+	if cond != "is-authenticated-user" {
+		return nil, fmt.Errorf("user is not authenticated")
 	}
 
 	return []checkers.Caveat{
