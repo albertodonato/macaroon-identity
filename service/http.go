@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// HTTPService represent an HTTP service.
 type HTTPService struct {
 	Name       string
 	ListenAddr string
@@ -16,6 +17,7 @@ type HTTPService struct {
 	listener net.Listener
 }
 
+// Endpoint returns the URL of the service.
 func (s *HTTPService) Endpoint() string {
 	if s.listener == nil {
 		return ""
@@ -24,6 +26,7 @@ func (s *HTTPService) Endpoint() string {
 	return "http://" + s.listener.Addr().String()
 }
 
+// Start starts the servicem either in background or foreground.
 func (s *HTTPService) Start(background bool) error {
 	listener, err := net.Listen("tcp", s.ListenAddr)
 	if err != nil {
@@ -47,6 +50,7 @@ func (s *HTTPService) Start(background bool) error {
 	return nil
 }
 
+// LogRequest logs an HTTP request.
 func (s *HTTPService) LogRequest(req *http.Request) {
 	s.Logger.Printf("%s - %s %s", s.Name, req.Method, req.URL.Path)
 }
