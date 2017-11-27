@@ -5,9 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/albertodonato/macaroon-identity/service"
-
 	"github.com/juju/loggo"
+	"gopkg.in/macaroon-bakery.v2/bakery"
+
+	"github.com/albertodonato/macaroon-identity/service"
 )
 
 type flags struct {
@@ -22,7 +23,7 @@ func main() {
 	}
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	s := service.NewAuthService("localhost:0", logger)
+	s := service.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
 	s.Checker.AddCreds(map[string]string{"foo": "bar", "baz": "bza"})
 	if err := s.Start(true); err != nil {
 		panic(err)

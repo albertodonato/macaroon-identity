@@ -2,7 +2,9 @@ package service
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -16,6 +18,25 @@ import (
 	"github.com/juju/httprequest"
 	"github.com/rogpeppe/fastuuid"
 )
+
+// GetKeyPair loads a key pair from a JSON file, or generate one if the
+// filename is empty.
+func GetKeyPair(filename string) (*bakery.KeyPair, error) {
+	if filename == "" {
+		return bakery.GenerateKey()
+	}
+
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	keyPair := bakery.KeyPair{}
+	if err := json.Unmarshal(data, &keyPair); err != nil {
+		return nil, err
+	}
+	return &keyPair, nil
+}
 
 const formURL string = "/form"
 
@@ -35,8 +56,7 @@ type AuthService struct {
 }
 
 // NewAuthService returns an AuthService
-func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
-	key := bakery.MustGenerateKey()
+func NewAuthService(listenAddr string, logger *log.Logger, keyPair *bakery.KeyPair) *AuthService {
 	mux := http.NewServeMux()
 	s := AuthService{
 		HTTPService: HTTPService{
@@ -45,7 +65,7 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 			Logger:     logger,
 			Mux:        mux,
 		},
-		KeyPair:       key,
+		KeyPair:       keyPair,
 		Checker:       NewCredentialsChecker(),
 		uuidGenerator: fastuuid.MustNewGenerator(),
 		userTokens:    map[string]string{},
@@ -54,7 +74,7 @@ func NewAuthService(listenAddr string, logger *log.Logger) *AuthService {
 
 	discharger := httpbakery.NewDischarger(
 		httpbakery.DischargerParams{
-			Key:     key,
+			Key:     keyPair,
 			Checker: httpbakery.ThirdPartyCaveatCheckerFunc(s.thirdPartyChecker),
 		})
 	discharger.AddMuxHandlers(mux, "/")
