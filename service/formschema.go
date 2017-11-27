@@ -13,12 +13,12 @@ var schemaResponse = form.SchemaResponse{
 
 var schemaFields = environschema.Fields{
 	"username": environschema.Attr{
-		Description: "username",
+		Description: "Authentication username",
 		Type:        environschema.Tstring,
 		Mandatory:   true,
 	},
 	"password": environschema.Attr{
-		Description: "password",
+		Description: "Authentication password",
 		Type:        environschema.Tstring,
 		Mandatory:   true,
 		Secret:      true,
