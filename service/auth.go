@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -18,6 +19,8 @@ import (
 	"github.com/juju/httprequest"
 	"github.com/rogpeppe/fastuuid"
 )
+
+const macaroonLifespan = 24 * time.Hour
 
 // GetKeyPair loads a key pair from a JSON file, or generate one if the
 // filename is empty.
@@ -104,6 +107,7 @@ func (s *AuthService) thirdPartyChecker(ctx context.Context, req *http.Request, 
 
 	return []checkers.Caveat{
 		checkers.DeclaredCaveat("username", username),
+		checkers.TimeBeforeCaveat(time.Now().Add(macaroonLifespan)),
 	}, nil
 }
 
