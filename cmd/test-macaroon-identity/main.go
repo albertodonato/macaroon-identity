@@ -15,6 +15,22 @@ type flags struct {
 	NoRequests bool
 }
 
+// Sample user/password credentials.
+var sampleCredentials = map[string]string{
+	"user1": "pass1",
+	"user2": "pass2",
+}
+
+// Sample user/groups mapping.
+var sampleGroups = map[string][]string{
+	"user1": {"group1", "group3"},
+	"user2": {"group2"},
+}
+
+// Groups required by the target service for authenticating a user. A user can
+// belong to any of the specified groups.
+var requiredGroups = []string{"group1", "group2"}
+
 func main() {
 	flags := parseFlags()
 
@@ -24,12 +40,13 @@ func main() {
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	s := service.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
-	s.Checker.AddCreds(map[string]string{"foo": "bar", "baz": "bza"})
+	s.Checker.AddCreds(sampleCredentials)
+	s.Checker.AddGroups(sampleGroups)
 	if err := s.Start(true); err != nil {
 		panic(err)
 	}
 
-	t := NewTargetService("localhost:0", s.Endpoint(), &s.KeyPair.Public, logger)
+	t := NewTargetService("localhost:0", s.Endpoint(), &s.KeyPair.Public, requiredGroups, logger)
 	if err := t.Start(!flags.NoRequests); err != nil {
 		panic(err)
 	}
@@ -41,9 +58,9 @@ func main() {
 
 func makeTestRequests(endpoint string, logger *log.Logger) {
 	testCredentials := []Credentials{
-		{Username: "foo", Password: "bar"},
-		{Username: "foo", Password: "invalid"},
-		{Username: "baz", Password: "bza"},
+		{Username: "user1", Password: "pass1"},
+		{Username: "user1", Password: "invalid"},
+		{Username: "user2", Password: "pass2"},
 	}
 	for _, credentials := range testCredentials {
 		clientRequest("GET", endpoint, credentials, logger)

@@ -10,6 +10,9 @@ It provides two binaries:
   connecting to a service which requires authentication through a third-party
   authentication service (which is effectively `macaroon-identity`).
 
+*NOTE*: the `macaroon-identity` server is meant as a sample service and not intended for any production use.
+
+
 ## Installing
 
 With a `GOPATH` set, run
@@ -21,10 +24,11 @@ go install github.com/albertodonato/macaroon-identity/...
 
 ## Running
 
-The server needs a CSV file containing credentials in the form `username,password`.
+The server needs a CSV file containing credentials in the form `username,password,groups`.
+The `groups` column is a space-separated list of groups that the user is part of and it's optional.
 
 ```bash
-echo 'foo,bar' > credentials.csv
+echo 'user1,pass2,grp1 grp2' > credentials.csv
 $GOPATH/bin/macaroon-identity
 ```
 

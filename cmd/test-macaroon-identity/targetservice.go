@@ -22,6 +22,8 @@ const authLifeSpan time.Duration = 5 * time.Minute
 type TargetService struct {
 	service.HTTPService
 
+	RequiredGroups []string
+
 	authEndpoint string
 	authKey      *bakery.PublicKey
 	keyPair      *bakery.KeyPair
@@ -29,7 +31,7 @@ type TargetService struct {
 }
 
 // NewTargetService returns a TargetService instance.
-func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.PublicKey, logger *log.Logger) *TargetService {
+func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.PublicKey, requiredGroups []string, logger *log.Logger) *TargetService {
 	key := bakery.MustGenerateKey()
 
 	locator := httpbakery.NewThirdPartyLocator(nil, nil)
@@ -58,10 +60,11 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 			Logger:     logger,
 			Mux:        mux,
 		},
-		authEndpoint: authEndpoint,
-		authKey:      authKey,
-		keyPair:      key,
-		bakery:       b,
+		RequiredGroups: requiredGroups,
+		authEndpoint:   authEndpoint,
+		authKey:        authKey,
+		keyPair:        key,
+		bakery:         b,
 	}
 	mux.Handle("/", t.auth(http.HandlerFunc(t.serveURL)))
 	return &t
@@ -81,9 +84,7 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 		ops := opsForRequest(req)
 		authChecker := t.bakery.Checker.Auth(httpbakery.RequestMacaroons(req)...)
 		if _, err := authChecker.Allow(ctx, ops...); err != nil {
-			oven := httpbakery.Oven{
-				Oven: t.bakery.Oven,
-			}
+			oven := httpbakery.Oven{Oven: t.bakery.Oven}
 			httpbakery.WriteError(ctx, w, oven.Error(ctx, req, err))
 			return
 		}
