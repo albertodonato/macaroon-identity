@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"gopkg.in/juju/idmclient.v1"
 	"gopkg.in/macaroon-bakery.v2/bakery"
+	"gopkg.in/macaroon-bakery.v2/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2/bakery/identchecker"
 	"gopkg.in/macaroon-bakery.v2/httpbakery"
 
@@ -40,17 +42,14 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 	idmClient, _ := idmclient.New(idmclient.NewParams{
 		BaseURL: authEndpoint,
 	})
+	authorizer := &authorizer{}
 	b := identchecker.NewBakery(identchecker.BakeryParams{
 		Key:            key,
 		Location:       endpoint,
 		Locator:        locator,
 		Checker:        httpbakery.NewChecker(),
 		IdentityClient: idmClient,
-		Authorizer: identchecker.ACLAuthorizer{
-			GetACL: func(ctx context.Context, op bakery.Op) ([]string, bool, error) {
-				return []string{identchecker.Everyone}, false, nil
-			},
-		},
+		Authorizer:     authorizer,
 	})
 	mux := http.NewServeMux()
 	t := TargetService{
@@ -66,6 +65,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 		keyPair:        key,
 		bakery:         b,
 	}
+	authorizer.Service = &t
 	mux.Handle("/", t.auth(http.HandlerFunc(t.serveURL)))
 	return &t
 
@@ -90,6 +90,29 @@ func (t *TargetService) auth(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, req)
 	})
+}
+
+type authorizer struct {
+	Service *TargetService
+}
+
+func (a *authorizer) Authorize(ctx context.Context, id identchecker.Identity, ops []bakery.Op) (allowed []bool, caveats []checkers.Caveat, err error) {
+	haveID := id != nil
+	allowed = make([]bool, len(ops))
+	for i := range allowed {
+		allowed[i] = haveID
+	}
+
+	if haveID && len(a.Service.RequiredGroups) > 0 {
+		groups := strings.Join(a.Service.RequiredGroups, " ")
+		caveat := checkers.Caveat{
+			Location:  a.Service.authEndpoint,
+			Condition: checkers.Condition("is-member-of", groups),
+			Namespace: checkers.StdNamespace,
+		}
+		caveats = append(caveats, caveat)
+	}
+	return
 }
 
 // opsForRequest returns the required operations implied by the given HTTP

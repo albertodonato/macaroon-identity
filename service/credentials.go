@@ -31,15 +31,20 @@ func (c *CredentialsChecker) Check(form interface{}) bool {
 	return ok && pass == password
 }
 
-// UserInGroup checks if a user belongs to the specified group.
-func (c *CredentialsChecker) UserInGroup(user, group string) bool {
+// UserInGroups checks if a user belongs to any of the specified groups.
+func (c *CredentialsChecker) UserInGroups(user string, groups []string) bool {
 	userGroups, ok := c.groups[user]
 	if !ok {
 		return false
 	}
 
-	pos := sort.SearchStrings(userGroups, group)
-	return pos == len(userGroups) || userGroups[pos] == group
+	for _, group := range groups {
+		pos := sort.SearchStrings(userGroups, group)
+		if pos == len(userGroups) || userGroups[pos] == group {
+			return true
+		}
+	}
+	return false
 }
 
 // AddCreds adds username/password pairs to credentials.

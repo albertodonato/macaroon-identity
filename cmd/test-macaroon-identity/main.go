@@ -19,12 +19,14 @@ type flags struct {
 var sampleCredentials = map[string]string{
 	"user1": "pass1",
 	"user2": "pass2",
+	"user3": "pass3",
 }
 
 // Sample user/groups mapping.
 var sampleGroups = map[string][]string{
 	"user1": {"group1", "group3"},
 	"user2": {"group2"},
+	"user3": {"group3"},
 }
 
 // Groups required by the target service for authenticating a user. A user can
@@ -59,8 +61,9 @@ func main() {
 func makeTestRequests(endpoint string, logger *log.Logger) {
 	testCredentials := []Credentials{
 		{Username: "user1", Password: "pass1"},
-		{Username: "user1", Password: "invalid"},
+		{Username: "user1", Password: "invalid"}, // invalid password
 		{Username: "user2", Password: "pass2"},
+		{Username: "user3", Password: "pass3"}, // valid creds but not in groups
 	}
 	for _, credentials := range testCredentials {
 		clientRequest("GET", endpoint, credentials, logger)

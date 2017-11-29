@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -97,18 +98,23 @@ func (s *AuthService) thirdPartyChecker(ctx context.Context, req *http.Request, 
 		return nil, fmt.Errorf("invalid token %#v", token)
 	}
 
-	cond, _, err := checkers.ParseCaveat(string(info.Condition))
+	cond, arg, err := checkers.ParseCaveat(string(info.Condition))
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse caveat %q: %s", info.Condition, err)
 	}
-	if cond != "is-authenticated-user" {
-		return nil, fmt.Errorf("user is not authenticated")
+	switch cond {
+	case "is-authenticated-user":
+		return []checkers.Caveat{
+			checkers.TimeBeforeCaveat(time.Now().Add(macaroonLifespan)),
+			checkers.DeclaredCaveat("username", username),
+		}, nil
+	case "is-member-of":
+		groups := strings.Split(arg, " ")
+		if !s.Checker.UserInGroups(username, groups) {
+			return nil, fmt.Errorf("user not in required group(s)")
+		}
 	}
-
-	return []checkers.Caveat{
-		checkers.DeclaredCaveat("username", username),
-		checkers.TimeBeforeCaveat(time.Now().Add(macaroonLifespan)),
-	}, nil
+	return []checkers.Caveat{}, nil
 }
 
 func (s *AuthService) formHandler(w http.ResponseWriter, req *http.Request) {
