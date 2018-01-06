@@ -21,7 +21,6 @@ With a `GOPATH` set, run
 
 ```bash
 go get -v github.com/albertodonato/macaroon-identity/...
-go install github.com/albertodonato/macaroon-identity/...
 ```
 
 ## Running
