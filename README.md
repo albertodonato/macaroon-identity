@@ -1,7 +1,9 @@
 # Sample macaroon-based identity service
 
-A sample identity service using
-[macaroons](https://github.com/go-macaroon/macaroon) using the "form"
+[![Build status](https://img.shields.io/travis/albertodonato/macaroon-identity.svg)](https://travis-ci.org/albertodonato/macaroon-identity)
+
+A sample identity service based on
+[macaroon](https://github.com/go-macaroon/macaroon) using the "form"
 authentication mechanism with user/password based on a CSV file.
 
 It provides two binaries:
