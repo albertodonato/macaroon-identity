@@ -42,17 +42,8 @@ func main() {
 	}
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	s := service.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
-	s.Checker.AddCreds(sampleCredentials)
-	s.Checker.AddGroups(sampleGroups)
-	if err := s.Start(true); err != nil {
-		panic(err)
-	}
-
-	t := NewTargetService("localhost:0", s.Endpoint(), &s.KeyPair.Public, requiredGroups, logger)
-	if err := t.Start(!flags.NoRequests); err != nil {
-		panic(err)
-	}
+	s := setupAuthService(logger)
+	t := setupTargetService(logger, s, !flags.NoRequests)
 
 	if !flags.NoRequests {
 		makeTestRequests(t.Endpoint(), logger)
@@ -70,6 +61,27 @@ func parseFlags() *flags {
 func errorExit(logger *log.Logger, format string, args ...interface{}) {
 	logger.Printf(format+"\n", args...)
 	os.Exit(1)
+}
+
+func setupAuthService(logger *log.Logger) *service.AuthService {
+	s := service.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
+	s.Checker.AddCreds(sampleCredentials)
+	s.Checker.AddGroups(sampleGroups)
+	if err := s.Start(true); err != nil {
+		panic(err)
+	}
+
+	return s
+}
+
+func setupTargetService(logger *log.Logger, authService *service.AuthService, background bool) *TargetService {
+	t := NewTargetService(
+		"localhost:0", authService.Endpoint(), &authService.KeyPair.Public, requiredGroups, logger)
+	if err := t.Start(background); err != nil {
+		panic(err)
+	}
+
+	return t
 }
 
 type testScenario struct {
