@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"regexp"
 
 	"github.com/juju/loggo"
 	"gopkg.in/macaroon-bakery.v2/bakery"
@@ -58,22 +59,76 @@ func main() {
 	}
 }
 
-func makeTestRequests(endpoint string, logger *log.Logger) {
-	testCredentials := []Credentials{
-		{Username: "user1", Password: "pass1"},
-		{Username: "user1", Password: "invalid"}, // invalid password
-		{Username: "user2", Password: "pass2"},
-		{Username: "user3", Password: "pass3"}, // valid creds but not in groups
-	}
-	for _, credentials := range testCredentials {
-		clientRequest("GET", endpoint, credentials, logger)
-	}
-}
-
 func parseFlags() *flags {
 	noRequests := flag.Bool("noreq", false, "don't perform test requests")
 	flag.Parse()
 	return &flags{
 		NoRequests: *noRequests,
+	}
+}
+
+func errorExit(logger *log.Logger, format string, args ...interface{}) {
+	logger.Printf(format+"\n", args...)
+	os.Exit(1)
+}
+
+type testScenario struct {
+	Credentials       Credentials
+	ResponseCode      int
+	ErrorStringRegexp string
+}
+
+func makeTestRequests(endpoint string, logger *log.Logger) {
+	testScenarios := []testScenario{
+		{
+			Credentials:  Credentials{Username: "user1", Password: "pass1"},
+			ResponseCode: 200,
+		},
+		{
+			// invalid password
+			Credentials:       Credentials{Username: "user1", Password: "invalid"},
+			ErrorStringRegexp: `invalid credentials`,
+		},
+		{
+			Credentials:  Credentials{Username: "user2", Password: "pass2"},
+			ResponseCode: 200,
+		},
+		{
+			// valid credentials but not in groups
+			Credentials:       Credentials{Username: "user3", Password: "pass3"},
+			ErrorStringRegexp: `user not in required group\(s\)`,
+		},
+	}
+	for _, scenario := range testScenarios {
+		resp, err := clientRequest("GET", endpoint, scenario.Credentials, logger)
+		if scenario.ResponseCode != 0 {
+			if resp == nil {
+				errorExit(
+					logger,
+					"expected response code %d, instead got error: %v",
+					scenario.ResponseCode, err)
+			}
+			if resp.StatusCode != scenario.ResponseCode {
+				errorExit(
+					logger,
+					"expected resposne code %d, instead got: %d",
+					scenario.ResponseCode, resp.StatusCode)
+			}
+		}
+		if scenario.ErrorStringRegexp != "" {
+			if err == nil {
+				errorExit(
+					logger,
+					`expected error maching regexp "%s", instead got nil`,
+					scenario.ErrorStringRegexp)
+			}
+
+			if matched, _ := regexp.MatchString(scenario.ErrorStringRegexp, err.Error()); !matched {
+				errorExit(
+					logger,
+					`error didn't match expected regexp "%s", instead got: %v`,
+					scenario.ErrorStringRegexp, err)
+			}
+		}
 	}
 }

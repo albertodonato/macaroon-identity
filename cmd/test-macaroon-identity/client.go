@@ -29,18 +29,18 @@ func (f *BatchFiller) Fill(form schemaform.Form) (map[string]interface{}, error)
 	}, nil
 }
 
-func clientRequest(method string, endpoint string, creds Credentials, logger *log.Logger) error {
+func clientRequest(method string, endpoint string, creds Credentials, logger *log.Logger) (*http.Response, error) {
 	client := newClient(creds)
 	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logger.Printf("cli  - %s %s with creds %q", method, endpoint, creds)
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Printf("cli  - got error: %v", err)
-		return err
+		return resp, err
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
@@ -49,7 +49,7 @@ func clientRequest(method string, endpoint string, creds Credentials, logger *lo
 	} else {
 		logger.Printf("cli  - got error: %v", err)
 	}
-	return err
+	return resp, err
 }
 
 func newClient(creds Credentials) *httpbakery.Client {
