@@ -2,7 +2,6 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	schemaform "gopkg.in/juju/environschema.v1/form"
@@ -29,27 +28,25 @@ func (f *BatchFiller) Fill(form schemaform.Form) (map[string]interface{}, error)
 	}, nil
 }
 
-func clientRequest(method string, endpoint string, creds Credentials, logger *log.Logger) (*http.Response, error) {
+func clientRequest(method string, endpoint string, creds Credentials) (statusCode int, content string, err error) {
 	client := newClient(creds)
 	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	logger.Printf("cli  - %s %s with creds %q", method, endpoint, creds)
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Printf("cli  - got error: %v", err)
-		return resp, err
+		return
 	}
 	defer resp.Body.Close()
+
+	statusCode = resp.StatusCode
 	data, err := ioutil.ReadAll(resp.Body)
 	if err == nil {
-		logger.Printf("cli  - got response: %s", string(data))
-	} else {
-		logger.Printf("cli  - got error: %v", err)
+		content = string(data)
 	}
-	return resp, err
+	return
 }
 
 func newClient(creds Credentials) *httpbakery.Client {
