@@ -30,13 +30,7 @@ func main() {
 	t := setupTargetService(logger, s, makeRequest)
 	if makeRequest {
 		creds := Credentials{Username: flags.Username, Password: flags.Password}
-		logger.Printf("cli  - req: GET %s %q", t.Endpoint(), creds)
-		statusCode, content, err := clientRequest("GET", t.Endpoint(), creds)
-		if err == nil {
-			logger.Printf("cli  - resp: %d - %s", statusCode, content)
-		} else {
-			logger.Printf("cli  - err: %v", err)
-		}
+		makeTestRequest(logger, creds, t.Endpoint())
 	}
 }
 
@@ -58,4 +52,14 @@ func logUserGroupSetup(logger *log.Logger) {
 	logger.Printf("valid credentials: %q", sampleCredentials)
 	logger.Printf("user/group mapping: %q", sampleGroups)
 	logger.Printf("required groups: %q", requiredGroups)
+}
+
+func makeTestRequest(logger *log.Logger, creds Credentials, path string) {
+	logger.Printf("cli  - req: GET %s %q", path, creds)
+	statusCode, content, err := clientRequest("GET", path, creds)
+	if err == nil {
+		logger.Printf("cli  - resp: %d - %s", statusCode, content)
+	} else {
+		logger.Printf("cli  - err: %v", err)
+	}
 }
