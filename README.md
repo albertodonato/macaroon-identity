@@ -1,5 +1,6 @@
 # Sample macaroon-based identity service
 
+[![GoDoc](https://godoc.org/github.com/albertodonato/macaroon-identity?status.svg)](https://godoc.org/github.com/albertodonato/macaroon-identity)
 [![Build status](https://img.shields.io/travis/albertodonato/macaroon-identity.svg)](https://travis-ci.org/albertodonato/macaroon-identity)
 
 A sample identity service based on
