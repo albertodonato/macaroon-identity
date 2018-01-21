@@ -1,5 +1,4 @@
-// An HTTP service.
-
+// Package httpservice defines an HTTP service.
 package httpservice
 
 import (

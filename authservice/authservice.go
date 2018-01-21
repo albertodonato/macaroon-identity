@@ -1,5 +1,4 @@
-// Macaroon-based authentication service.
-
+// Package authservice defines a Macaroon-based authentication service.
 package authservice
 
 import (

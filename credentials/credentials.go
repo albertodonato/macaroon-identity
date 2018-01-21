@@ -1,5 +1,4 @@
-// Hold and validate credentials.
-
+// Package credentials defines a Checker to hold and validate credentials.
 package credentials
 
 import (
