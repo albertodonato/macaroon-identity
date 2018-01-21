@@ -1,4 +1,6 @@
-package service
+// Macaroon-based authentication service.
+
+package authservice
 
 import (
 	"encoding/base64"
@@ -19,6 +21,9 @@ import (
 
 	"github.com/juju/httprequest"
 	"github.com/rogpeppe/fastuuid"
+
+	"github.com/albertodonato/macaroon-identity/credentials"
+	"github.com/albertodonato/macaroon-identity/httpservice"
 )
 
 const macaroonLifespan = 24 * time.Hour
@@ -50,10 +55,10 @@ type loginResponse struct {
 
 // AuthService is an HTTP service for authentication using macaroons.
 type AuthService struct {
-	HTTPService
+	httpservice.HTTPService
 
 	KeyPair *bakery.KeyPair
-	Checker CredentialsChecker
+	Checker credentials.Checker
 
 	userTokens    map[string]string // map user token to username
 	uuidGenerator *fastuuid.Generator
@@ -63,14 +68,14 @@ type AuthService struct {
 func NewAuthService(listenAddr string, logger *log.Logger, keyPair *bakery.KeyPair) *AuthService {
 	mux := http.NewServeMux()
 	s := AuthService{
-		HTTPService: HTTPService{
+		HTTPService: httpservice.HTTPService{
 			Name:       "auth",
 			ListenAddr: listenAddr,
 			Logger:     logger,
 			Mux:        mux,
 		},
 		KeyPair:       keyPair,
-		Checker:       NewCredentialsChecker(),
+		Checker:       credentials.NewChecker(),
 		uuidGenerator: fastuuid.MustNewGenerator(),
 		userTokens:    map[string]string{},
 	}

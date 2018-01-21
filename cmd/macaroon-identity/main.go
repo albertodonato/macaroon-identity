@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/albertodonato/macaroon-identity/service"
+	"github.com/albertodonato/macaroon-identity/authservice"
 )
 
 type flags struct {
@@ -17,11 +17,11 @@ type flags struct {
 func main() {
 	flags := parseFlags()
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	keyPair, err := service.GetKeyPair(flags.KeyFile)
+	keyPair, err := authservice.GetKeyPair(flags.KeyFile)
 	if err != nil {
 		panic(err)
 	}
-	s := service.NewAuthService(flags.Endpoint, logger, keyPair)
+	s := authservice.NewAuthService(flags.Endpoint, logger, keyPair)
 	if err := s.Checker.LoadCreds(flags.CredsFile); err != nil {
 		panic(err)
 	}

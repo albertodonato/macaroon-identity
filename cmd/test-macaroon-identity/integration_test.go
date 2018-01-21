@@ -1,3 +1,5 @@
+// Integration tests.
+
 package main
 
 import (
@@ -6,13 +8,13 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/albertodonato/macaroon-identity/service"
+	"github.com/albertodonato/macaroon-identity/authservice"
 )
 
 type IntegrationTestSuite struct {
 	suite.Suite
 
-	authService   *service.AuthService
+	authService   *authservice.AuthService
 	targetService *TargetService
 }
 

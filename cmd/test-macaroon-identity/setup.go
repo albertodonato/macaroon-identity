@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/macaroon-bakery.v2/bakery"
 
-	"github.com/albertodonato/macaroon-identity/service"
+	"github.com/albertodonato/macaroon-identity/authservice"
 )
 
 // Sample user/password credentials.
@@ -36,8 +36,8 @@ func (l voidWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func setupAuthService(logger *log.Logger) *service.AuthService {
-	s := service.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
+func setupAuthService(logger *log.Logger) *authservice.AuthService {
+	s := authservice.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
 	s.Checker.AddCreds(sampleCredentials)
 	s.Checker.AddGroups(sampleGroups)
 	if err := s.Start(true); err != nil {
@@ -47,7 +47,7 @@ func setupAuthService(logger *log.Logger) *service.AuthService {
 	return s
 }
 
-func setupTargetService(logger *log.Logger, authService *service.AuthService, background bool) *TargetService {
+func setupTargetService(logger *log.Logger, authService *authservice.AuthService, background bool) *TargetService {
 	t := NewTargetService(
 		"localhost:0", authService.Endpoint(), &authService.KeyPair.Public, requiredGroups, logger)
 	if err := t.Start(background); err != nil {

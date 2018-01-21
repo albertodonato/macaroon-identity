@@ -1,4 +1,6 @@
-package service
+// Hold and validate credentials.
+
+package credentials
 
 import (
 	"encoding/csv"
@@ -8,22 +10,22 @@ import (
 	"strings"
 )
 
-// CredentialsChecker keeps track and validates credentials.
-type CredentialsChecker struct {
+// Checker keeps track and validates credentials.
+type Checker struct {
 	creds  map[string]string
 	groups map[string][]string
 }
 
-// NewCredentialsChecker returns a new CredentialsChecker.
-func NewCredentialsChecker() CredentialsChecker {
-	return CredentialsChecker{
+// NewChecker returns a new Checker.
+func NewChecker() Checker {
+	return Checker{
 		creds:  map[string]string{},
 		groups: map[string][]string{},
 	}
 }
 
 // Check validates credentials.
-func (c *CredentialsChecker) Check(form interface{}) bool {
+func (c *Checker) Check(form interface{}) bool {
 	m := form.(map[string]interface{})
 	username := m["username"].(string)
 	password := m["password"].(string)
@@ -32,7 +34,7 @@ func (c *CredentialsChecker) Check(form interface{}) bool {
 }
 
 // UserInGroups checks if a user belongs to any of the specified groups.
-func (c *CredentialsChecker) UserInGroups(user string, groups []string) bool {
+func (c *Checker) UserInGroups(user string, groups []string) bool {
 	userGroups, ok := c.groups[user]
 	if !ok {
 		return false
@@ -48,21 +50,21 @@ func (c *CredentialsChecker) UserInGroups(user string, groups []string) bool {
 }
 
 // AddCreds adds username/password pairs to credentials.
-func (c *CredentialsChecker) AddCreds(creds map[string]string) {
+func (c *Checker) AddCreds(creds map[string]string) {
 	for user, pass := range creds {
 		c.creds[user] = pass
 	}
 }
 
 // AddGroups adds username/groups mapping.
-func (c *CredentialsChecker) AddGroups(groups map[string][]string) {
+func (c *Checker) AddGroups(groups map[string][]string) {
 	for user, userGroups := range groups {
 		c.groups[user] = userGroups
 	}
 }
 
 // LoadCreds loads credentials from a CSV file.
-func (c *CredentialsChecker) LoadCreds(csvFile string) error {
+func (c *Checker) LoadCreds(csvFile string) error {
 	f, err := os.Open(csvFile)
 	if err != nil {
 		return err

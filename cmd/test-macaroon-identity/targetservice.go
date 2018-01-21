@@ -15,14 +15,14 @@ import (
 	"gopkg.in/macaroon-bakery.v2/bakery/identchecker"
 	"gopkg.in/macaroon-bakery.v2/httpbakery"
 
-	"github.com/albertodonato/macaroon-identity/service"
+	"github.com/albertodonato/macaroon-identity/httpservice"
 )
 
 const authLifeSpan time.Duration = 5 * time.Minute
 
 // TargetService is an HTTP service which requires macaroon-based authentication.
 type TargetService struct {
-	service.HTTPService
+	httpservice.HTTPService
 
 	RequiredGroups []string
 
@@ -53,7 +53,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 	})
 	mux := http.NewServeMux()
 	t := TargetService{
-		HTTPService: service.HTTPService{
+		HTTPService: httpservice.HTTPService{
 			Name:       "serv",
 			ListenAddr: endpoint,
 			Logger:     logger,

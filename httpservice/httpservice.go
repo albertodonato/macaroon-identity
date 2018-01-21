@@ -1,4 +1,6 @@
-package service
+// An HTTP service.
+
+package httpservice
 
 import (
 	"fmt"
@@ -41,9 +43,9 @@ func (s *HTTPService) Start(background bool) error {
 		return http.Serve(s.listener, s.Mux)
 	}
 
+	// run in background
 	go func() {
-		err := http.Serve(s.listener, s.Mux)
-		if err != nil {
+		if err := http.Serve(s.listener, s.Mux); err != nil {
 			panic(err)
 		}
 	}()
