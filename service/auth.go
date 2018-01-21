@@ -59,7 +59,7 @@ type AuthService struct {
 	uuidGenerator *fastuuid.Generator
 }
 
-// NewAuthService returns an AuthService
+// NewAuthService returns an AuthService.
 func NewAuthService(listenAddr string, logger *log.Logger, keyPair *bakery.KeyPair) *AuthService {
 	mux := http.NewServeMux()
 	s := AuthService{

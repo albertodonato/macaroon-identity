@@ -26,7 +26,7 @@ func (s *HTTPService) Endpoint() string {
 	return "http://" + s.listener.Addr().String()
 }
 
-// Start starts the servicem either in background or foreground.
+// Start starts the service either in background or foreground.
 func (s *HTTPService) Start(background bool) error {
 	listener, err := net.Listen("tcp", s.ListenAddr)
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *HTTPService) LogRequest(req *http.Request) {
 	s.Logger.Printf("%s - %s %s", s.Name, req.Method, req.URL.Path)
 }
 
-// Fail returns an HTTP error with the specified message
+// Fail returns an HTTP error with the specified message.
 func (s *HTTPService) Fail(w http.ResponseWriter, code int, msg string, args ...interface{}) {
 	http.Error(w, fmt.Sprintf(msg, args...), code)
 }
