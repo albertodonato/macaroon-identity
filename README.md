@@ -1,7 +1,8 @@
 # Sample macaroon-based identity service
 
-[![GoDoc](https://godoc.org/github.com/albertodonato/macaroon-identity?status.svg)](https://godoc.org/github.com/albertodonato/macaroon-identity)
 [![Build status](https://img.shields.io/travis/albertodonato/macaroon-identity.svg)](https://travis-ci.org/albertodonato/macaroon-identity)
+[![Go Report Card](https://goreportcard.com/badge/github.com/albertodonato/macaroon-identity)](https://goreportcard.com/report/github.com/albertodonato/macaroon-identity)
+[![GoDoc](https://godoc.org/github.com/albertodonato/macaroon-identity?status.svg)](https://godoc.org/github.com/albertodonato/macaroon-identity)
 
 A sample identity service based on
 [macaroon](https://github.com/go-macaroon/macaroon) using the "form"
