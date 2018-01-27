@@ -26,6 +26,20 @@ With a `GOPATH` set, run
 go get -v github.com/albertodonato/macaroon-identity/...
 ```
 
+## Run tests
+
+To run tests, first install test dependencies with:
+
+````bash
+ go get -v github.com/stretchr/testify/suite
+ ```
+
+ then
+
+ ```bash
+ go test github.com/albertodonato/macaroon-identity/...
+```
+
 ## Running
 
 The server needs a CSV file containing credentials in the form
