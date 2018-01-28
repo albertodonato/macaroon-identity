@@ -30,13 +30,13 @@ go get -v github.com/albertodonato/macaroon-identity/...
 
 To run tests, first install test dependencies with:
 
-````bash
+```bash
  go get -v github.com/stretchr/testify/suite
- ```
+```
 
- then
+then
 
- ```bash
+```bash
  go test github.com/albertodonato/macaroon-identity/...
 ```
 
