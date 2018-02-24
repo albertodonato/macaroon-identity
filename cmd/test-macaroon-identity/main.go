@@ -24,7 +24,7 @@ func main() {
 	}
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	logUserGroupSetup(logger)
+	logSetup(logger)
 
 	s := setupAuthService(logger)
 	t := setupTargetService(logger, s, makeRequest)
@@ -34,24 +34,20 @@ func main() {
 	}
 }
 
-func parseFlags() *flags {
-	username := flag.String("username", "", "authentication username")
-	password := flag.String("password", "", "authentication password")
-	path := flag.String("path", "/", "request path")
-	logLevel := flag.String("loglevel", "", "log level")
+func parseFlags() (f flags) {
+	flag.StringVar(&f.Username, "auth-username", "", "authentication username")
+	flag.StringVar(&f.Password, "auth-password", "", "authentication password")
+	flag.StringVar(&f.Path, "path", "/", "request path")
+	flag.StringVar(&f.LogLevel, "loglevel", "", "log level")
 	flag.Parse()
-	return &flags{
-		Username: *username,
-		Password: *password,
-		Path:     *path,
-		LogLevel: *logLevel,
-	}
+	return
 }
 
-func logUserGroupSetup(logger *log.Logger) {
+func logSetup(logger *log.Logger) {
 	logger.Printf("valid credentials: %q", sampleCredentials)
 	logger.Printf("user/group mapping: %q", sampleGroups)
 	logger.Printf("required groups: %q", requiredGroups)
+	logger.Printf("macaroon validity: %q", macaroonValidity)
 }
 
 func makeTestRequest(logger *log.Logger, creds Credentials, path string) {

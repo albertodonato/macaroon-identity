@@ -32,18 +32,14 @@ func main() {
 	}
 }
 
-func parseFlags() *flags {
-	endpoint := flag.String("endpoint", "localhost:8081", "service endpoint")
-	credsFile := flag.String(
-		"creds", "credentials.csv",
+func parseFlags() (f flags) {
+	flag.StringVar(&f.Endpoint, "endpoint", "localhost:8081", "service endpoint")
+	flag.StringVar(&f.CredsFile, "creds", "credentials.csv",
 		"CSV file with credentials as (username,password[,group1 group2...])")
-	keyFile := flag.String("keyfile", "", "JSON file containing the service public/private key pair")
-	authValidity := flag.Duration("auth-validity", 5*time.Minute, "Duration of macaroon validity")
+	flag.StringVar(&f.KeyFile, "keyfile", "",
+		"JSON file containing the service public/private key pair")
+	flag.DurationVar(&f.AuthValidity, "auth-validity", 5*time.Minute,
+		"Duration of macaroon validity")
 	flag.Parse()
-	return &flags{
-		Endpoint:     *endpoint,
-		CredsFile:    *credsFile,
-		KeyFile:      *keyFile,
-		AuthValidity: *authValidity,
-	}
+	return
 }
