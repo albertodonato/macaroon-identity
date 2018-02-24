@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -17,8 +16,6 @@ import (
 
 	"github.com/albertodonato/macaroon-identity/httpservice"
 )
-
-const authLifeSpan time.Duration = 5 * time.Minute
 
 // TargetService is an HTTP service which requires macaroon-based authentication.
 type TargetService struct {
