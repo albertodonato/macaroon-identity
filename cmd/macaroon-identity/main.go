@@ -4,14 +4,16 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/albertodonato/macaroon-identity/authservice"
 )
 
 type flags struct {
-	Endpoint  string
-	CredsFile string
-	KeyFile   string
+	Endpoint     string
+	CredsFile    string
+	KeyFile      string
+	AuthValidity time.Duration
 }
 
 func main() {
@@ -21,7 +23,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	s := authservice.NewAuthService(flags.Endpoint, logger, keyPair)
+	s := authservice.NewAuthService(flags.Endpoint, logger, keyPair, flags.AuthValidity)
 	if err := s.Checker.LoadCreds(flags.CredsFile); err != nil {
 		panic(err)
 	}
@@ -32,12 +34,16 @@ func main() {
 
 func parseFlags() *flags {
 	endpoint := flag.String("endpoint", "localhost:8081", "service endpoint")
-	credsFile := flag.String("creds", "credentials.csv", "CSV file with credentials (username and password)")
-	keyFile := flag.String("keyfile", "", "JSON file containing the service public/private key pair.")
+	credsFile := flag.String(
+		"creds", "credentials.csv",
+		"CSV file with credentials as (username,password[,group1 group2...])")
+	keyFile := flag.String("keyfile", "", "JSON file containing the service public/private key pair")
+	authValidity := flag.Duration("auth-validity", 5*time.Minute, "Duration of macaroon validity")
 	flag.Parse()
 	return &flags{
-		Endpoint:  *endpoint,
-		CredsFile: *credsFile,
-		KeyFile:   *keyFile,
+		Endpoint:     *endpoint,
+		CredsFile:    *credsFile,
+		KeyFile:      *keyFile,
+		AuthValidity: *authValidity,
 	}
 }

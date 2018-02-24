@@ -25,8 +25,6 @@ import (
 	"github.com/albertodonato/macaroon-identity/httpservice"
 )
 
-const macaroonLifespan = 24 * time.Hour
-
 // GetKeyPair loads a key pair from a JSON file, or generate one if the
 // filename is empty.
 func GetKeyPair(filename string) (*bakery.KeyPair, error) {
@@ -56,15 +54,16 @@ type loginResponse struct {
 type AuthService struct {
 	httpservice.HTTPService
 
-	KeyPair *bakery.KeyPair
-	Checker credentials.Checker
+	KeyPair          *bakery.KeyPair
+	Checker          credentials.Checker
+	MacaroonValidity time.Duration
 
 	userTokens    map[string]string // map user token to username
 	uuidGenerator *fastuuid.Generator
 }
 
 // NewAuthService returns an AuthService.
-func NewAuthService(listenAddr string, logger *log.Logger, keyPair *bakery.KeyPair) *AuthService {
+func NewAuthService(listenAddr string, logger *log.Logger, keyPair *bakery.KeyPair, macaroonValidity time.Duration) *AuthService {
 	mux := http.NewServeMux()
 	s := AuthService{
 		HTTPService: httpservice.HTTPService{
@@ -73,10 +72,11 @@ func NewAuthService(listenAddr string, logger *log.Logger, keyPair *bakery.KeyPa
 			Logger:     logger,
 			Mux:        mux,
 		},
-		KeyPair:       keyPair,
-		Checker:       credentials.NewChecker(),
-		uuidGenerator: fastuuid.MustNewGenerator(),
-		userTokens:    map[string]string{},
+		KeyPair:          keyPair,
+		Checker:          credentials.NewChecker(),
+		MacaroonValidity: macaroonValidity,
+		uuidGenerator:    fastuuid.MustNewGenerator(),
+		userTokens:       map[string]string{},
 	}
 	mux.Handle(formURL, http.HandlerFunc(s.formHandler))
 
@@ -109,7 +109,7 @@ func (s *AuthService) thirdPartyChecker(ctx context.Context, req *http.Request, 
 	switch cond {
 	case "is-authenticated-user":
 		return []checkers.Caveat{
-			checkers.TimeBeforeCaveat(time.Now().Add(macaroonLifespan)),
+			checkers.TimeBeforeCaveat(time.Now().Add(s.MacaroonValidity)),
 			checkers.DeclaredCaveat("username", username),
 		}, nil
 	case "is-member-of":

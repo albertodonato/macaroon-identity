@@ -2,11 +2,14 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"gopkg.in/macaroon-bakery.v2/bakery"
 
 	"github.com/albertodonato/macaroon-identity/authservice"
 )
+
+const macaroonValidity = 1 * time.Minute
 
 // Sample user/password credentials.
 var sampleCredentials = map[string]string{
@@ -37,7 +40,8 @@ func (l voidWriter) Write(p []byte) (int, error) {
 }
 
 func setupAuthService(logger *log.Logger) *authservice.AuthService {
-	s := authservice.NewAuthService("localhost:0", logger, bakery.MustGenerateKey())
+	s := authservice.NewAuthService(
+		"localhost:0", logger, bakery.MustGenerateKey(), macaroonValidity)
 	s.Checker.AddCreds(sampleCredentials)
 	s.Checker.AddGroups(sampleGroups)
 	if err := s.Start(true); err != nil {
