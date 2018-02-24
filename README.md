@@ -18,7 +18,7 @@ It provides two binaries:
 intended for any production use.
 
 
-## Installing
+## Install
 
 With a `GOPATH` set, run
 
@@ -31,7 +31,7 @@ go get -v github.com/albertodonato/macaroon-identity/...
 To run tests, first install test dependencies with:
 
 ```bash
- go get -vt github.com/albertodonato/macaroon-identity/...
+ go get -v -t github.com/albertodonato/macaroon-identity/...
 ```
 
 then
