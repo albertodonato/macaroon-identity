@@ -32,13 +32,6 @@ var requiredGroups = []string{
 	"group2",
 }
 
-// A writer that doesn't do anything.
-type voidWriter struct{}
-
-func (l voidWriter) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
 func setupAuthService(logger *log.Logger) *authservice.AuthService {
 	s := authservice.NewAuthService(
 		"localhost:0", logger, bakery.MustGenerateKey(), macaroonValidity)

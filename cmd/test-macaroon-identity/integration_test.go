@@ -11,6 +11,10 @@ import (
 	"github.com/albertodonato/macaroon-identity/authservice"
 )
 
+func TestIntegration(t *testing.T) {
+	suite.Run(t, new(IntegrationTestSuite))
+}
+
 type IntegrationTestSuite struct {
 	suite.Suite
 
@@ -34,7 +38,7 @@ func (s *IntegrationTestSuite) TestValidCredentials() {
 }
 
 // If credentials are invalid the request fails.
-func (s *IntegrationTestSuite) TestInValidCredentials() {
+func (s *IntegrationTestSuite) TestInvalidCredentials() {
 	creds := Credentials{Username: "user1", Password: "invalid"}
 	_, _, err := clientRequest("GET", s.targetService.Endpoint(), creds)
 	s.Regexp(`invalid credentials`, err.Error())
@@ -47,6 +51,9 @@ func (s *IntegrationTestSuite) TestNotGroupMember() {
 	s.Regexp(`user not in required group\(s\)`, err.Error())
 }
 
-func TestIntegration(t *testing.T) {
-	suite.Run(t, new(IntegrationTestSuite))
+// A writer that doesn't do anything.
+type voidWriter struct{}
+
+func (l voidWriter) Write(p []byte) (int, error) {
+	return len(p), nil
 }
