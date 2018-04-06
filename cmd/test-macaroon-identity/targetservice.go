@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"gopkg.in/juju/idmclient.v1"
+	"gopkg.in/CanonicalLtd/candidclient.v1"
 	"gopkg.in/macaroon-bakery.v2/bakery"
 	"gopkg.in/macaroon-bakery.v2/bakery/checkers"
 	"gopkg.in/macaroon-bakery.v2/bakery/identchecker"
@@ -36,7 +36,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 	locator := httpbakery.NewThirdPartyLocator(nil, nil)
 	locator.AllowInsecure()
 
-	idmClient, _ := idmclient.New(idmclient.NewParams{
+	idClient, _ := candidclient.New(candidclient.NewParams{
 		BaseURL: authEndpoint,
 	})
 	authorizer := &authorizer{}
@@ -45,7 +45,7 @@ func NewTargetService(endpoint string, authEndpoint string, authKey *bakery.Publ
 		Location:       endpoint,
 		Locator:        locator,
 		Checker:        httpbakery.NewChecker(),
-		IdentityClient: idmClient,
+		IdentityClient: idClient,
 		Authorizer:     authorizer,
 	})
 	mux := http.NewServeMux()
